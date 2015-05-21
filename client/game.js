@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2014, Daishi Kato <daishi@axlight.com>
+  Copyright (C) 2014-2015, Daishi Kato <daishi@axlight.com>
   All rights reserved.
 
   Redistribution and use in source and binary forms, with or without
@@ -32,11 +32,14 @@
 
 function createGame(clickStream) {
   var fingerKey = Math.floor(Math.random() * 256);
+  var circleType = ['a', 'b'][Math.floor(Math.random() * 2)];
 
   var game = new Phaser.Game(window.innerWidth, window.innerHeight);
 
   function preload() {
     game.load.image('circle', 'assets/circle.png');
+    game.load.image('circle-a', 'assets/circle-a.png');
+    game.load.image('circle-b', 'assets/circle-b.png');
     game.load.image('finger', 'assets/finger.png');
     game.load.audio('drop', ['assets/sound/by_chance.mp3', 'assets/sound/by_chance.ogg']);
     game.load.audio('fire', ['assets/sound/launcher1.mp3', 'assets/sound/launcher1.ogg']);
@@ -69,10 +72,11 @@ function createGame(clickStream) {
   function click(pointer) {
     var now = Date.now();
     if (pointer.position.y < game.world.height / 2) {
-      createCircle(fingerKey, pointer.position.x);
+      createCircle(circleType, fingerKey, pointer.position.x);
       clickStream.emit('message', {
         action: 'create',
         x: pointer.position.x,
+        type: circleType,
         key: fingerKey
       });
     } else if (lastRepluseTime + 1000 < now) {
@@ -88,7 +92,7 @@ function createGame(clickStream) {
 
   clickStream.on('message', function(message) {
     if (message.action === 'create') {
-      createCircle(message.key, message.x);
+      createCircle(message.type, message.key, message.x);
     } else if (message.action === 'repulse') {
       repulseCircles(message.key, message.x);
     }
@@ -97,10 +101,10 @@ function createGame(clickStream) {
   var circles = [];
   var circleSize = 20 * (window.devicePixelRatio || 1);
 
-  function createCircle(fingerKey, x) {
+  function createCircle(circleType, fingerKey, x) {
     if (x < circleSize) x = circleSize;
     if (x > game.world.width - circleSize) x = game.world.width - circleSize;
-    var circle = game.add.sprite(x, -2 * circleSize, 'circle');
+    var circle = game.add.sprite(x, -2 * circleSize, circleType ? 'circle-' + circleType : 'circle');
     circle.scale.set(window.devicePixelRatio || 1);
     game.physics.p2.enable(circle);
     circle.body.setCircle(circleSize);
